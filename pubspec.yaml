@@ -14,13 +14,10 @@ dependencies:
     sdk: flutter
 
   google_mobile_ads: ^4.0.0
-  clean: ^0.1.0
-  flutter_clean: ^0.0.1
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
-
   flutter_lints: ^4.0.0
 
 flutter:
