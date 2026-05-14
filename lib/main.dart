@@ -17,6 +17,7 @@ class MyApp extends StatelessWidget {
   }
 }
 
+// 🏠 HOME SCREEN
 class HomeScreen extends StatefulWidget {
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -130,8 +131,8 @@ class _HomeScreenState extends State<HomeScreen> {
                   ElevatedButton(
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Color(0xff00C897),
-                      padding:
-                          EdgeInsets.symmetric(horizontal: 40, vertical: 15),
+                      padding: EdgeInsets.symmetric(
+                          horizontal: 40, vertical: 15),
                     ),
                     onPressed: () {
                       Navigator.push(
@@ -151,8 +152,8 @@ class _HomeScreenState extends State<HomeScreen> {
                   ElevatedButton(
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Color(0xff4DEEEA),
-                      padding:
-                          EdgeInsets.symmetric(horizontal: 40, vertical: 15),
+                      padding: EdgeInsets.symmetric(
+                          horizontal: 40, vertical: 15),
                     ),
                     onPressed: () {
                       Navigator.push(
@@ -184,7 +185,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 }
 
-// 🎮 GAME SCREEN
+// 🎮 GAME SCREEN (UI ONLY)
 class GameScreen extends StatelessWidget {
   final bool isRobot;
 
@@ -193,15 +194,86 @@ class GameScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Color(0xff06141B),
+
       appBar: AppBar(
+        backgroundColor: Color(0xff11212D),
+        centerTitle: true,
         title: Text(
           isRobot ? "Human vs Robot" : "Human vs Human",
+          style: TextStyle(
+            color: Color(0xff4DEEEA),
+            fontWeight: FontWeight.bold,
+          ),
         ),
       ),
+
       body: Center(
-        child: Text(
-          isRobot ? "🤖 Robot Mode Coming Soon" : "👥 2 Player Mode Coming Soon",
-          style: TextStyle(fontSize: 24),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            // 🎮 ICON
+            Container(
+              width: 120,
+              height: 120,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: LinearGradient(
+                  colors: [
+                    Color(0xff4DEEEA),
+                    Color(0xff00C897),
+                  ],
+                ),
+              ),
+              child: Center(
+                child: Text(
+                  isRobot ? "🤖" : "👥",
+                  style: TextStyle(fontSize: 50),
+                ),
+              ),
+            ),
+
+            SizedBox(height: 30),
+
+            // 🧠 TITLE
+            Text(
+              isRobot
+                  ? "Play Against Robot"
+                  : "Play With Friend",
+              style: TextStyle(
+                color: Color(0xffEAFDFC),
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+
+            SizedBox(height: 20),
+
+            // 📄 DESCRIPTION
+            Text(
+              isRobot
+                  ? "You will play against AI opponent."
+                  : "Two players can play on same device.",
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: Colors.white70,
+                fontSize: 16,
+              ),
+            ),
+
+            SizedBox(height: 40),
+
+            // ▶️ START BUTTON (UI ONLY)
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Color(0xff00C897),
+                padding: EdgeInsets.symmetric(
+                    horizontal: 40, vertical: 15),
+              ),
+              onPressed: () {},
+              child: Text("Start Game"),
+            ),
+          ],
         ),
       ),
     );
