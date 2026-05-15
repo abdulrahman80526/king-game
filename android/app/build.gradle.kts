@@ -5,7 +5,7 @@ plugins {
 }
 
 android {
-    namespace = "com.hhstech.tic_tac_showdown"
+    namespace = "com.hhstech.tictacshowdown"
     compileSdk = flutter.compileSdkVersion
 
     // ✅ FIXED NDK VERSION
@@ -21,7 +21,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.hhstech.tic_tac_showdown"
+        applicationId = "com.hhstech.tictacshowdown"
         minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
