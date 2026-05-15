@@ -1,5 +1,5 @@
 plugins {
-    id("com.android.application")
+    id("com.hhstech.tictacshowdown")
     id("kotlin-android")
     id("dev.flutter.flutter-gradle-plugin")
 }
