@@ -17,7 +17,7 @@ class MyApp extends StatelessWidget {
   }
 }
 
-// 🏠 HOME SCREEN
+// ================= HOME =================
 class HomeScreen extends StatefulWidget {
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -70,85 +70,59 @@ class _HomeScreenState extends State<HomeScreen> {
 
       appBar: AppBar(
         backgroundColor: Color(0xff11212D),
-        centerTitle: true,
-        title: Text(
-          "TIC TAC ShowDown",
-          style: TextStyle(
-            color: Color(0xff4DEEEA),
-            fontWeight: FontWeight.bold,
-          ),
-        ),
+        title: Text("TIC TAC ShowDown"),
       ),
 
-      body: SafeArea(
-        child: Column(
-          children: [
-            // 🔝 TOP AD
-            if (isLoaded)
-              SizedBox(
-                height: 50,
-                child: AdWidget(ad: topAd),
-              ),
+      body: Column(
+        children: [
+          if (isLoaded)
+            SizedBox(height: 50, child: AdWidget(ad: topAd)),
 
-            // 🟢 UI
-            Expanded(
-              child: Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      "Choose Game Mode",
-                      style:
-                          TextStyle(color: Colors.white, fontSize: 24),
-                    ),
-                    SizedBox(height: 40),
+          Expanded(
+            child: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
 
-                    ElevatedButton(
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) =>
-                                GameScreen(isRobot: false),
-                          ),
-                        );
-                      },
-                      child: Text("Human VS Human"),
-                    ),
+                  ElevatedButton(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => GameScreen(isRobot: false),
+                        ),
+                      );
+                    },
+                    child: Text("Human VS Human"),
+                  ),
 
-                    SizedBox(height: 20),
+                  SizedBox(height: 20),
 
-                    ElevatedButton(
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) =>
-                                GameScreen(isRobot: true),
-                          ),
-                        );
-                      },
-                      child: Text("Human VS Robot"),
-                    ),
-                  ],
-                ),
+                  ElevatedButton(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => GameScreen(isRobot: true),
+                        ),
+                      );
+                    },
+                    child: Text("Human VS Robot"),
+                  ),
+                ],
               ),
             ),
+          ),
 
-            // 🔻 BOTTOM AD
-            if (isLoaded)
-              SizedBox(
-                height: 50,
-                child: AdWidget(ad: bottomAd),
-              ),
-          ],
-        ),
+          if (isLoaded)
+            SizedBox(height: 50, child: AdWidget(ad: bottomAd)),
+        ],
       ),
     );
   }
 }
 
-// 🎮 GAME SCREEN
+// ================= GAME =================
 class GameScreen extends StatefulWidget {
   final bool isRobot;
 
@@ -159,55 +133,117 @@ class GameScreen extends StatefulWidget {
 }
 
 class _GameScreenState extends State<GameScreen> {
-  late BannerAd topAd;
-  late BannerAd bottomAd;
-  bool isLoaded = false;
-
   List<String> board = List.filled(9, "");
   bool isXTurn = true;
+  bool gameOver = false;
 
-  @override
-  void initState() {
-    super.initState();
+  // WIN CHECK
+  String checkWinner() {
+    List<List<int>> win = [
+      [0,1,2],[3,4,5],[6,7,8],
+      [0,3,6],[1,4,7],[2,5,8],
+      [0,4,8],[2,4,6]
+    ];
 
-    topAd = BannerAd(
-      size: AdSize.banner,
-      adUnitId: 'ca-app-pub-8454932729334320/9615839716',
-      listener: BannerAdListener(
-        onAdLoaded: (_) => setState(() => isLoaded = true),
-        onAdFailedToLoad: (ad, error) => ad.dispose(),
-      ),
-      request: AdRequest(),
-    );
+    for (var p in win) {
+      String a = board[p[0]];
+      String b = board[p[1]];
+      String c = board[p[2]];
 
-    bottomAd = BannerAd(
-      size: AdSize.banner,
-      adUnitId: 'ca-app-pub-8454932729334320/9615839716',
-      listener: BannerAdListener(
-        onAdLoaded: (_) => setState(() => isLoaded = true),
-        onAdFailedToLoad: (ad, error) => ad.dispose(),
-      ),
-      request: AdRequest(),
-    );
+      if (a != "" && a == b && b == c) {
+        return a;
+      }
+    }
 
-    topAd.load();
-    bottomAd.load();
+    if (!board.contains("")) return "Draw";
+
+    return "";
   }
 
-  @override
-  void dispose() {
-    topAd.dispose();
-    bottomAd.dispose();
-    super.dispose();
+  // POPUP
+  void showResult(String result) {
+    gameOver = true;
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => AlertDialog(
+        title: Text("Game Over"),
+        content: Text(result == "Draw"
+            ? "Match Draw"
+            : "$result Wins"),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              resetGame();
+            },
+            child: Text("Play Again"),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              Navigator.pop(context);
+            },
+            child: Text("Home"),
+          ),
+        ],
+      ),
+    );
   }
 
+  // RESET
+  void resetGame() {
+    setState(() {
+      board = List.filled(9, "");
+      isXTurn = true;
+      gameOver = false;
+    });
+  }
+
+  // TAP
   void tapBox(int i) {
-    if (board[i] != "") return;
+    if (board[i] != "" || gameOver) return;
 
     setState(() {
       board[i] = isXTurn ? "X" : "O";
       isXTurn = !isXTurn;
     });
+
+    String result = checkWinner();
+    if (result != "") {
+      Future.delayed(Duration(milliseconds: 300), () {
+        showResult(result);
+      });
+      return;
+    }
+
+    // ROBOT AUTO PLAY
+    if (widget.isRobot && !isXTurn && !gameOver) {
+      Future.delayed(Duration(milliseconds: 400), robotMove);
+    }
+  }
+
+  // ROBOT AI
+  void robotMove() {
+    if (gameOver) return;
+
+    for (int i = 0; i < 9; i++) {
+      if (board[i] == "") {
+        setState(() {
+          board[i] = "O";
+          isXTurn = true;
+        });
+
+        String result = checkWinner();
+        if (result != "") {
+          Future.delayed(Duration(milliseconds: 300), () {
+            showResult(result);
+          });
+        }
+        break;
+      }
+    }
   }
 
   Widget buildBox(int i) {
@@ -227,18 +263,12 @@ class _GameScreenState extends State<GameScreen> {
               color: board[i] == "X"
                   ? Color(0xff4DEEEA)
                   : Color(0xff00C897),
+              fontWeight: FontWeight.bold,
             ),
           ),
         ),
       ),
     );
-  }
-
-  void resetGame() {
-    setState(() {
-      board = List.filled(9, "");
-      isXTurn = true;
-    });
   }
 
   @override
@@ -248,52 +278,41 @@ class _GameScreenState extends State<GameScreen> {
 
       appBar: AppBar(
         backgroundColor: Color(0xff11212D),
-        title: Text(
-          widget.isRobot ? "Human vs Robot" : "Human vs Human",
-        ),
+        title: Text(widget.isRobot
+            ? "Human vs Robot"
+            : "Human vs Human"),
       ),
 
-      body: SafeArea(
-        child: Column(
-          children: [
-            // 🔝 TOP AD
-            if (isLoaded)
-              SizedBox(height: 50, child: AdWidget(ad: topAd)),
+      body: Column(
+        children: [
 
-            // 🎮 GAME
-            Expanded(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    isXTurn ? "X Turn" : "O Turn",
-                    style:
-                        TextStyle(color: Colors.white, fontSize: 22),
-                  ),
-                  SizedBox(height: 20),
-                  GridView.builder(
-                    shrinkWrap: true,
-                    itemCount: 9,
-                    gridDelegate:
-                        SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 3,
-                    ),
-                    itemBuilder: (_, i) => buildBox(i),
-                  ),
-                  SizedBox(height: 20),
-                  ElevatedButton(
-                    onPressed: resetGame,
-                    child: Text("Restart"),
-                  )
-                ],
+          SizedBox(height: 10),
+
+          Text(
+            gameOver ? "Game Finished" : (isXTurn ? "X Turn" : "O Turn"),
+            style: TextStyle(color: Colors.white, fontSize: 20),
+          ),
+
+          SizedBox(height: 20),
+
+          Expanded(
+            child: GridView.builder(
+              itemCount: 9,
+              gridDelegate:
+                  SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 3,
               ),
+              itemBuilder: (_, i) => buildBox(i),
             ),
+          ),
 
-            // 🔻 BOTTOM AD
-            if (isLoaded)
-              SizedBox(height: 50, child: AdWidget(ad: bottomAd)),
-          ],
-        ),
+          ElevatedButton(
+            onPressed: resetGame,
+            child: Text("Restart"),
+          ),
+
+          SizedBox(height: 10),
+        ],
       ),
     );
   }
