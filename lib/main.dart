@@ -7,6 +7,7 @@ void main() {
   runApp(MyApp());
 }
 
+// ================= APP =================
 class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
@@ -24,9 +25,10 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  late BannerAd topAd;
-  late BannerAd bottomAd;
-  bool isLoaded = false;
+  BannerAd? topAd;
+  BannerAd? bottomAd;
+  bool topLoaded = false;
+  bool bottomLoaded = false;
 
   @override
   void initState() {
@@ -35,32 +37,44 @@ class _HomeScreenState extends State<HomeScreen> {
     topAd = BannerAd(
       size: AdSize.banner,
       adUnitId: 'ca-app-pub-8454932729334320/9615839716',
-      listener: BannerAdListener(
-        onAdLoaded: (_) => setState(() => isLoaded = true),
-        onAdFailedToLoad: (ad, error) => ad.dispose(),
-      ),
       request: AdRequest(),
-    );
+      listener: BannerAdListener(
+        onAdLoaded: (_) => setState(() => topLoaded = true),
+        onAdFailedToLoad: (ad, error) {
+          ad.dispose();
+        },
+      ),
+    )..load();
 
     bottomAd = BannerAd(
       size: AdSize.banner,
       adUnitId: 'ca-app-pub-8454932729334320/9615839716',
-      listener: BannerAdListener(
-        onAdLoaded: (_) => setState(() => isLoaded = true),
-        onAdFailedToLoad: (ad, error) => ad.dispose(),
-      ),
       request: AdRequest(),
-    );
-
-    topAd.load();
-    bottomAd.load();
+      listener: BannerAdListener(
+        onAdLoaded: (_) => setState(() => bottomLoaded = true),
+        onAdFailedToLoad: (ad, error) {
+          ad.dispose();
+        },
+      ),
+    )..load();
   }
 
   @override
   void dispose() {
-    topAd.dispose();
-    bottomAd.dispose();
+    topAd?.dispose();
+    bottomAd?.dispose();
     super.dispose();
+  }
+
+  Widget adBox(BannerAd? ad) {
+    return Container(
+      color: Colors.white,
+      padding: EdgeInsets.all(4),
+      child: SizedBox(
+        height: 50,
+        child: ad == null ? SizedBox() : AdWidget(ad: ad),
+      ),
+    );
   }
 
   @override
@@ -70,13 +84,20 @@ class _HomeScreenState extends State<HomeScreen> {
 
       appBar: AppBar(
         backgroundColor: Color(0xff11212D),
-        title: Text("TIC TAC ShowDown"),
+        title: Text(
+          "TIC TAC ShowDown",
+          style: TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+            letterSpacing: 1.2,
+          ),
+        ),
       ),
 
       body: Column(
         children: [
-          if (isLoaded)
-            SizedBox(height: 50, child: AdWidget(ad: topAd)),
+
+          if (topLoaded) adBox(topAd),
 
           Expanded(
             child: Center(
@@ -114,8 +135,7 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
 
-          if (isLoaded)
-            SizedBox(height: 50, child: AdWidget(ad: bottomAd)),
+          if (bottomLoaded) adBox(bottomAd),
         ],
       ),
     );
@@ -137,7 +157,6 @@ class _GameScreenState extends State<GameScreen> {
   bool isXTurn = true;
   bool gameOver = false;
 
-  // WIN CHECK
   String checkWinner() {
     List<List<int>> win = [
       [0,1,2],[3,4,5],[6,7,8],
@@ -156,11 +175,17 @@ class _GameScreenState extends State<GameScreen> {
     }
 
     if (!board.contains("")) return "Draw";
-
     return "";
   }
 
-  // POPUP
+  void resetGame() {
+    setState(() {
+      board = List.filled(9, "");
+      isXTurn = true;
+      gameOver = false;
+    });
+  }
+
   void showResult(String result) {
     gameOver = true;
 
@@ -192,16 +217,6 @@ class _GameScreenState extends State<GameScreen> {
     );
   }
 
-  // RESET
-  void resetGame() {
-    setState(() {
-      board = List.filled(9, "");
-      isXTurn = true;
-      gameOver = false;
-    });
-  }
-
-  // TAP
   void tapBox(int i) {
     if (board[i] != "" || gameOver) return;
 
@@ -211,6 +226,7 @@ class _GameScreenState extends State<GameScreen> {
     });
 
     String result = checkWinner();
+
     if (result != "") {
       Future.delayed(Duration(milliseconds: 300), () {
         showResult(result);
@@ -218,13 +234,11 @@ class _GameScreenState extends State<GameScreen> {
       return;
     }
 
-    // ROBOT AUTO PLAY
     if (widget.isRobot && !isXTurn && !gameOver) {
       Future.delayed(Duration(milliseconds: 400), robotMove);
     }
   }
 
-  // ROBOT AI
   void robotMove() {
     if (gameOver) return;
 
@@ -261,8 +275,8 @@ class _GameScreenState extends State<GameScreen> {
             style: TextStyle(
               fontSize: 40,
               color: board[i] == "X"
-                  ? Color(0xff4DEEEA)
-                  : Color(0xff00C897),
+                  ? Colors.cyan
+                  : Colors.greenAccent,
               fontWeight: FontWeight.bold,
             ),
           ),
@@ -278,9 +292,15 @@ class _GameScreenState extends State<GameScreen> {
 
       appBar: AppBar(
         backgroundColor: Color(0xff11212D),
-        title: Text(widget.isRobot
-            ? "Human vs Robot"
-            : "Human vs Human"),
+        title: Text(
+          widget.isRobot
+              ? "Human vs Robot"
+              : "Human vs Human",
+          style: TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
       ),
 
       body: Column(
