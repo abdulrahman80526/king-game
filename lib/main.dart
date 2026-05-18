@@ -29,12 +29,277 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  BannerAd? topAd;
-  BannerAd? bottomAd;
+  late BannerAd topAd;
+  late BannerAd bottomAd;
 
   bool topLoaded = false;
   bool bottomLoaded = false;
 
+  @override
+  void initState() {
+    super.initState();
+
+    // 🔝 TOP AD
+    topAd = BannerAd(
+      adUnitId: 'ca-app-pub-8454932729334320/8093357442',
+      size: AdSize.banner,
+      request: const AdRequest(),
+      listener: BannerAdListener(
+        onAdLoaded: (_) => setState(() => topLoaded = true),
+        onAdFailedToLoad: (ad, error) => ad.dispose(),
+      ),
+    )..load();
+
+    // 🔻 BOTTOM AD
+    bottomAd = BannerAd(
+      adUnitId: 'ca-app-pub-8454932729334320/9615839716',
+      size: AdSize.banner,
+      request: const AdRequest(),
+      listener: BannerAdListener(
+        onAdLoaded: (_) => setState(() => bottomLoaded = true),
+        onAdFailedToLoad: (ad, error) => ad.dispose(),
+      ),
+    )..load();
+  }
+
+  @override
+  void dispose() {
+    topAd.dispose();
+    bottomAd.dispose();
+    super.dispose();
+  }
+
+  Widget adBox(BannerAd ad) {
+    return Container(
+      color: Colors.white,
+      child: SizedBox(
+        height: 50,
+        child: AdWidget(ad: ad),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xff06141B),
+
+      appBar: AppBar(
+        backgroundColor: const Color(0xff11212D),
+        centerTitle: true,
+        title: const Text(
+          "TIC TAC ShowDown",
+          style: TextStyle(
+            color: Colors.cyanAccent,
+            fontWeight: FontWeight.bold,
+            fontSize: 22,
+            letterSpacing: 1.5,
+          ),
+        ),
+      ),
+
+      body: Column(
+        children: [
+
+          // 🔝 TOP AD
+          if (topLoaded) adBox(topAd),
+
+          // 🟢 MAIN UI
+          Expanded(
+            child: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+
+                  Container(
+                    width: 120,
+                    height: 120,
+                    decoration: const BoxDecoration(
+                      shape: BoxShape.circle,
+                      gradient: LinearGradient(
+                        colors: [
+                          Colors.cyanAccent,
+                          Colors.greenAccent,
+                        ],
+                      ),
+                    ),
+                    child: const Center(
+                      child: Text(
+                        "XO",
+                        style: TextStyle(
+                          color: Colors.black,
+                          fontSize: 40,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 30),
+
+                  const Text(
+                    "Choose Game Mode",
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+
+                  const SizedBox(height: 40),
+
+                  ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.cyanAccent,
+                      foregroundColor: Colors.black,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 40,
+                        vertical: 15,
+                      ),
+                    ),
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) =>
+                              const GameScreen(isRobot: false),
+                        ),
+                      );
+                    },
+                    child: const Text("Human VS Human"),
+                  ),
+
+                  const SizedBox(height: 20),
+
+                  ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.greenAccent,
+                      foregroundColor: Colors.black,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 40,
+                        vertical: 15,
+                      ),
+                    ),
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) =>
+                              const GameScreen(isRobot: true),
+                        ),
+                      );
+                    },
+                    child: const Text("Human VS Robot"),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+
+      // 🔻 BOTTOM AD
+      bottomNavigationBar: bottomLoaded
+          ? adBox(bottomAd)
+          : const SizedBox(),
+    );
+  }
+}
+
+// ================= GAME SCREEN =================
+class GameScreen extends StatelessWidget {
+  final bool isRobot;
+
+  const GameScreen({super.key, required this.isRobot});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xff06141B),
+
+      appBar: AppBar(
+        backgroundColor: const Color(0xff11212D),
+        centerTitle: true,
+        title: Text(
+          isRobot ? "Human vs Robot" : "Human vs Human",
+          style: const TextStyle(
+            color: Colors.cyanAccent,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ),
+
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+
+            Container(
+              width: 120,
+              height: 120,
+              decoration: const BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: LinearGradient(
+                  colors: [
+                    Colors.cyanAccent,
+                    Colors.greenAccent,
+                  ],
+                ),
+              ),
+              child: Center(
+                child: Text(
+                  isRobot ? "🤖" : "👥",
+                  style: const TextStyle(fontSize: 50),
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 30),
+
+            Text(
+              isRobot
+                  ? "Play Against Robot"
+                  : "Play With Friend",
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+
+            const SizedBox(height: 20),
+
+            Text(
+              isRobot
+                  ? "You will play against AI opponent."
+                  : "Two players can play on same device.",
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                color: Colors.white70,
+                fontSize: 16,
+              ),
+            ),
+
+            const SizedBox(height: 40),
+
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.cyanAccent,
+                foregroundColor: Colors.black,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 40,
+                  vertical: 15,
+                ),
+              ),
+              onPressed: () {},
+              child: const Text("Start Game"),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
   @override
   void initState() {
     super.initState();
