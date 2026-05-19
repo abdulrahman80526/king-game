@@ -1,3 +1,4 @@
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 
@@ -34,42 +35,29 @@ class _HomeScreenState extends State<HomeScreen> {
 
   bool topLoaded = false;
   bool bottomLoaded = false;
+  bool showDifficultyMenu = false; // Controls state of the AI sub-menu
 
   @override
   void initState() {
     super.initState();
 
-    // TOP AD
     topAd = BannerAd(
       adUnitId: 'ca-app-pub-8454932729334320/8093357442',
       size: AdSize.banner,
       request: const AdRequest(),
       listener: BannerAdListener(
-        onAdLoaded: (_) {
-          setState(() {
-            topLoaded = true;
-          });
-        },
-        onAdFailedToLoad: (ad, error) {
-          ad.dispose();
-        },
+        onAdLoaded: (_) => setState(() => topLoaded = true),
+        onAdFailedToLoad: (ad, error) => ad.dispose(),
       ),
     )..load();
 
-    // BOTTOM AD
     bottomAd = BannerAd(
       adUnitId: 'ca-app-pub-8454932729334320/9615839716',
       size: AdSize.banner,
       request: const AdRequest(),
       listener: BannerAdListener(
-        onAdLoaded: (_) {
-          setState(() {
-            bottomLoaded = true;
-          });
-        },
-        onAdFailedToLoad: (ad, error) {
-          ad.dispose();
-        },
+        onAdLoaded: (_) => setState(() => bottomLoaded = true),
+        onAdFailedToLoad: (ad, error) => ad.dispose(),
       ),
     )..load();
   }
@@ -82,11 +70,17 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget adWidget(BannerAd ad) {
-    return Container(
-      color: Colors.white,
-      child: SizedBox(
-        height: 50,
-        child: AdWidget(ad: ad),
+    return SizedBox(
+      height: 50,
+      child: AdWidget(ad: ad),
+    );
+  }
+
+  void navigateToGame(bool isRobot, String difficulty) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => GameScreen(isRobot: isRobot, difficulty: difficulty),
       ),
     );
   }
@@ -95,96 +89,137 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xff06141B),
-
       appBar: AppBar(
         backgroundColor: const Color(0xff11212D),
+        iconTheme: const IconThemeData(color: Colors.cyanAccent),
         centerTitle: true,
         title: const Text(
           "TIC TAC ShowDown",
-          style: TextStyle(
-            color: Colors.cyanAccent,
-            fontWeight: FontWeight.bold,
-            fontSize: 22,
-          ),
+          style:
+              TextStyle(color: Colors.cyanAccent, fontWeight: FontWeight.bold),
         ),
       ),
-
       body: Column(
         children: [
-
-          // 🔝 TOP AD
           if (topLoaded) adWidget(topAd),
-
           Expanded(
             child: Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-
-                  const Icon(
-                    Icons.gamepad,
-                    size: 100,
-                    color: Colors.cyanAccent,
-                  ),
-
-                  const SizedBox(height: 20),
-
-                  const Text(
-                    "Choose Game Mode",
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 22,
-                      fontWeight: FontWeight.bold,
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Image.asset(
+                      'assets/icon/ic_icon.png',
+                      width: 120,
+                      height: 120,
+                      fit: BoxFit.contain,
                     ),
-                  ),
-
-                  const SizedBox(height: 40),
-
-                  ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.cyanAccent,
-                      foregroundColor: Colors.black,
+                    const SizedBox(height: 20),
+                    const Text(
+                      "Choose Game Mode",
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) =>
-                              const GameScreen(isRobot: false),
+                    const SizedBox(height: 35),
+                    if (!showDifficultyMenu) ...[
+                      // Main Options Menu
+                      ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.cyanAccent,
+                          foregroundColor: Colors.black,
+                          minimumSize: const Size(220, 48),
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8)),
                         ),
-                      );
-                    },
-                    child: const Text("Human VS Human"),
-                  ),
-
-                  const SizedBox(height: 20),
-
-                  ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.greenAccent,
-                      foregroundColor: Colors.black,
-                    ),
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) =>
-                              const GameScreen(isRobot: true),
+                        onPressed: () => navigateToGame(false, "None"),
+                        child: const Text("Human VS Human",
+                            style: TextStyle(
+                                fontWeight: FontWeight.bold, fontSize: 16)),
+                      ),
+                      const SizedBox(height: 20),
+                      ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.greenAccent,
+                          foregroundColor: Colors.black,
+                          minimumSize: const Size(220, 48),
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8)),
                         ),
-                      );
-                    },
-                    child: const Text("Human VS Robot"),
-                  ),
-                ],
+                        onPressed: () {
+                          setState(() {
+                            showDifficultyMenu = true;
+                          });
+                        },
+                        child: const Text("Human VS Robot",
+                            style: TextStyle(
+                                fontWeight: FontWeight.bold, fontSize: 16)),
+                      ),
+                    ] else ...[
+                      // Dynamic AI Difficulty Sub-Menu
+                      const Text(
+                        "Select AI Difficulty",
+                        style: TextStyle(
+                            color: Colors.greenAccent,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w500),
+                      ),
+                      const SizedBox(height: 15),
+                      ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.green[400],
+                          foregroundColor: Colors.black,
+                          minimumSize: const Size(200, 42),
+                        ),
+                        onPressed: () => navigateToGame(true, "Easy"),
+                        child: const Text("Easy Mode",
+                            style: TextStyle(fontWeight: FontWeight.bold)),
+                      ),
+                      const SizedBox(height: 12),
+                      ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.orangeAccent,
+                          foregroundColor: Colors.black,
+                          minimumSize: const Size(200, 42),
+                        ),
+                        onPressed: () => navigateToGame(true, "Medium"),
+                        child: const Text("Medium Mode",
+                            style: TextStyle(fontWeight: FontWeight.bold)),
+                      ),
+                      const SizedBox(height: 12),
+                      ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.redAccent,
+                          foregroundColor: Colors.white,
+                          minimumSize: const Size(200, 42),
+                        ),
+                        onPressed: () => navigateToGame(true, "Hard"),
+                        child: const Text("Hard (Unbeatable)",
+                            style: TextStyle(fontWeight: FontWeight.bold)),
+                      ),
+                      const SizedBox(height: 20),
+                      TextButton.icon(
+                        onPressed: () {
+                          setState(() {
+                            showDifficultyMenu = false;
+                          });
+                        },
+                        icon: const Icon(Icons.arrow_back,
+                            color: Colors.white70, size: 18),
+                        label: const Text("Back to Main Menu",
+                            style: TextStyle(color: Colors.white70)),
+                      ),
+                    ],
+                  ],
+                ),
               ),
             ),
           ),
         ],
       ),
-
-      // 🔻 BOTTOM AD
-      bottomNavigationBar:
-          bottomLoaded ? adWidget(bottomAd) : const SizedBox(),
+      bottomNavigationBar: bottomLoaded ? adWidget(bottomAd) : const SizedBox(),
     );
   }
 }
@@ -192,8 +227,10 @@ class _HomeScreenState extends State<HomeScreen> {
 // ================= GAME SCREEN =================
 class GameScreen extends StatefulWidget {
   final bool isRobot;
+  final String difficulty;
 
-  const GameScreen({super.key, required this.isRobot});
+  const GameScreen(
+      {super.key, required this.isRobot, required this.difficulty});
 
   @override
   State<GameScreen> createState() => _GameScreenState();
@@ -204,27 +241,21 @@ class _GameScreenState extends State<GameScreen> {
   bool isXTurn = true;
   bool gameOver = false;
 
-  String checkWinner() {
-    List<List<int>> win = [
-      [0, 1, 2],
-      [3, 4, 5],
-      [6, 7, 8],
-      [0, 3, 6],
-      [1, 4, 7],
-      [2, 5, 8],
-      [0, 4, 8],
-      [2, 4, 6],
-    ];
+  final List<List<int>> winLines = [
+    [0, 1, 2], [3, 4, 5], [6, 7, 8], // Rows
+    [0, 3, 6], [1, 4, 7], [2, 5, 8], // Columns
+    [0, 4, 8], [2, 4, 6] // Diagonals
+  ];
 
-    for (var w in win) {
-      if (board[w[0]] != "" &&
-          board[w[0]] == board[w[1]] &&
-          board[w[1]] == board[w[2]]) {
-        return board[w[0]];
+  String checkWinner(List<String> currentBoard) {
+    for (var w in winLines) {
+      if (currentBoard[w[0]] != "" &&
+          currentBoard[w[0]] == currentBoard[w[1]] &&
+          currentBoard[w[1]] == currentBoard[w[2]]) {
+        return currentBoard[w[0]];
       }
     }
-
-    if (!board.contains("")) return "Draw";
+    if (!currentBoard.contains("")) return "Draw";
     return "";
   }
 
@@ -244,54 +275,168 @@ class _GameScreenState extends State<GameScreen> {
       isXTurn = !isXTurn;
     });
 
-    String result = checkWinner();
-
+    String result = checkWinner(board);
     if (result != "") {
-      gameOver = true;
-      Future.delayed(const Duration(milliseconds: 300), () {
-        showResult(result);
-      });
+      endTheGame(result);
       return;
     }
 
     if (widget.isRobot && !isXTurn && !gameOver) {
-      Future.delayed(const Duration(milliseconds: 400), robotMove);
+      Future.delayed(const Duration(milliseconds: 350), processRobotMove);
     }
   }
 
-  void robotMove() {
-    for (int i = 0; i < 9; i++) {
-      if (board[i] == "") {
-        setState(() {
-          board[i] = "O";
-          isXTurn = true;
-        });
-        break;
+  // Master controller managing logic switches based on difficulty metrics
+  void processRobotMove() {
+    int selectedMove = -1;
+
+    if (widget.difficulty == "Easy") {
+      selectedMove = getRandomMove();
+    } else if (widget.difficulty == "Medium") {
+      selectedMove = getMediumMove();
+    } else if (widget.difficulty == "Hard") {
+      selectedMove = getUnbeatableMinimaxMove();
+    }
+
+    if (selectedMove != -1) {
+      setState(() {
+        board[selectedMove] = "O";
+        isXTurn = true;
+      });
+
+      String result = checkWinner(board);
+      if (result != "") {
+        endTheGame(result);
       }
     }
   }
 
-  void showResult(String result) {
+  // 🔹 STRATEGY 1: Pure Random (Easy)
+  int getRandomMove() {
+    List<int> emptyIndices = [];
+    for (int i = 0; i < 9; i++) {
+      if (board[i] == "") emptyIndices.add(i);
+    }
+    return emptyIndices.isNotEmpty ? (emptyIndices..shuffle()).first : -1;
+  }
+
+  // 🔸 STRATEGY 2: Smart Win/Block Check (Medium)
+  int getMediumMove() {
+    // 1. Can the Robot win instantly this turn?
+    for (int i = 0; i < 9; i++) {
+      if (board[i] == "") {
+        board[i] = "O";
+        if (checkWinner(board) == "O") {
+          board[i] = ""; // Clear testing state
+          return i;
+        }
+        board[i] = "";
+      }
+    }
+
+    // 2. Is human one move away from winning? Block them!
+    for (int i = 0; i < 9; i++) {
+      if (board[i] == "") {
+        board[i] = "X";
+        if (checkWinner(board) == "X") {
+          board[i] = "";
+          return i;
+        }
+        board[i] = "";
+      }
+    }
+
+    // 3. Otherwise pick a random available square
+    return getRandomMove();
+  }
+
+  // 🔥 STRATEGY 3: Flawless Evaluation Tree Computation (Hard/Unbeatable)
+  int getUnbeatableMinimaxMove() {
+    int bestScore = -1000;
+    int optimalMove = -1;
+
+    for (int i = 0; i < 9; i++) {
+      if (board[i] == "") {
+        board[i] = "O";
+        int score = minimax(board, 0, false);
+        board[i] = "";
+        if (score > bestScore) {
+          bestScore = score;
+          optimalMove = i;
+        }
+      }
+    }
+    return optimalMove;
+  }
+
+  int minimax(List<String> simulationBoard, int depth, bool isMaximizing) {
+    String state = checkWinner(simulationBoard);
+    if (state == "O") return 10 - depth;
+    if (state == "X") return depth - 10;
+    if (state == "Draw") return 0;
+
+    if (isMaximizing) {
+      int bestScore = -1000;
+      for (int i = 0; i < 9; i++) {
+        if (simulationBoard[i] == "") {
+          simulationBoard[i] = "O";
+          int score = minimax(simulationBoard, depth + 1, false);
+          simulationBoard[i] = "";
+          bestScore = max(score, bestScore);
+        }
+      }
+      return bestScore;
+    } else {
+      int bestScore = 1000;
+      for (int i = 0; i < 9; i++) {
+        if (simulationBoard[i] == "") {
+          simulationBoard[i] = "X";
+          int score = minimax(simulationBoard, depth + 1, true);
+          simulationBoard[i] = "";
+          bestScore = min(score, bestScore);
+        }
+      }
+      return bestScore;
+    }
+  }
+
+  void endTheGame(String outcome) {
+    setState(() {
+      gameOver = true;
+    });
+    Future.delayed(const Duration(milliseconds: 300), () {
+      showResultDialog(outcome);
+    });
+  }
+
+  void showResultDialog(String outcome) {
     showDialog(
       context: context,
       barrierDismissible: false,
       builder: (_) => AlertDialog(
-        title: const Text("Game Over"),
-        content: Text(result == "Draw" ? "Match Draw" : "$result Wins"),
+        backgroundColor: const Color(0xff11212D),
+        title: const Text("Game Over",
+            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        content: Text(
+          outcome == "Draw" ? "It's a Tie!" : "$outcome Wins!",
+          style: const TextStyle(color: Colors.cyanAccent, fontSize: 18),
+        ),
         actions: [
           TextButton(
             onPressed: () {
               Navigator.pop(context);
               resetGame();
             },
-            child: const Text("Play Again"),
+            child: const Text("Play Again",
+                style: TextStyle(color: Colors.greenAccent)),
           ),
           TextButton(
             onPressed: () {
               Navigator.pop(context);
               Navigator.pop(context);
             },
-            child: const Text("Home"),
+            child: const Text("Home Menu",
+                style: TextStyle(color: Colors.white70)),
           ),
         ],
       ),
@@ -306,13 +451,14 @@ class _GameScreenState extends State<GameScreen> {
         decoration: BoxDecoration(
           color: const Color(0xff11212D),
           borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: Colors.white.withOpacity(0.05)),
         ),
         child: Center(
           child: Text(
             board[i],
-            style: const TextStyle(
-              fontSize: 40,
-              color: Colors.cyanAccent,
+            style: TextStyle(
+              fontSize: 42,
+              color: board[i] == "X" ? Colors.cyanAccent : Colors.greenAccent,
               fontWeight: FontWeight.bold,
             ),
           ),
@@ -325,43 +471,53 @@ class _GameScreenState extends State<GameScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xff06141B),
-
       appBar: AppBar(
         backgroundColor: const Color(0xff11212D),
+        iconTheme: const IconThemeData(
+            color: Colors.cyanAccent), // Bright neon back arrow indicator
         title: Text(
-          widget.isRobot ? "Human vs Robot" : "Human vs Human",
-          style: const TextStyle(color: Colors.cyanAccent),
+          widget.isRobot ? "Robot (${widget.difficulty})" : "Human vs Human",
+          style: const TextStyle(
+              color: Colors.cyanAccent, fontWeight: FontWeight.bold),
         ),
       ),
-
       body: Column(
         children: [
-          const SizedBox(height: 10),
-
-          Text(
-            gameOver ? "Game Over" : (isXTurn ? "X Turn" : "O Turn"),
-            style: const TextStyle(color: Colors.white, fontSize: 20),
-          ),
-
           const SizedBox(height: 20),
-
+          Text(
+            gameOver
+                ? "Match Concluded"
+                : (isXTurn
+                    ? "X"
+                    : (widget.isRobot ? "Robot calculating..." : "O")),
+            style: const TextStyle(
+                color: Colors.white, fontSize: 18, letterSpacing: 0.5),
+          ),
+          const SizedBox(height: 25),
           Expanded(
-            child: GridView.builder(
-              itemCount: 9,
-              gridDelegate:
-                  const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 3,
+            child: Padding(
+              padding: const EdgeInsets.all(12.0),
+              child: GridView.builder(
+                itemCount: 9,
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 3,
+                ),
+                itemBuilder: (_, i) => box(i),
               ),
-              itemBuilder: (_, i) => box(i),
             ),
           ),
-
-          ElevatedButton(
+          ElevatedButton.icon(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.redAccent.withOpacity(0.8),
+              foregroundColor: Colors.white,
+              minimumSize: const Size(140, 40),
+            ),
             onPressed: resetGame,
-            child: const Text("Restart"),
+            icon: const Icon(Icons.refresh, size: 18),
+            label: const Text("Restart",
+                style: TextStyle(fontWeight: FontWeight.bold)),
           ),
-
-          const SizedBox(height: 10),
+          const SizedBox(height: 35),
         ],
       ),
     );
