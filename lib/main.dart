@@ -1,10 +1,20 @@
+import 'dart:io' show Platform;
 import 'dart:math';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 
+bool get isMobile => !kIsWeb && (Platform.isAndroid || Platform.isIOS);
+
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
-  MobileAds.instance.initialize();
+  if (isMobile) {
+    try {
+      MobileAds.instance.initialize();
+    } catch (e) {
+      debugPrint("AdMob initialization failed: $e");
+    }
+  }
   runApp(const MyApp());
 }
 
@@ -30,8 +40,8 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  late BannerAd topAd;
-  late BannerAd bottomAd;
+  BannerAd? topAd;
+  BannerAd? bottomAd;
 
   bool topLoaded = false;
   bool bottomLoaded = false;
@@ -41,48 +51,59 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
 
-    topAd = BannerAd(
-      adUnitId: 'ca-app-pub-8454932729334320/8093357442',
-      size: AdSize.banner,
-      request: const AdRequest(),
-      listener: BannerAdListener(
-        onAdLoaded: (_) => setState(() => topLoaded = true),
-        onAdFailedToLoad: (ad, error) => ad.dispose(),
-      ),
-    )..load();
+    if (isMobile) {
+      topAd = BannerAd(
+        adUnitId: 'ca-app-pub-8454932729334320/8093357442',
+        size: AdSize.banner,
+        request: const AdRequest(),
+        listener: BannerAdListener(
+          onAdLoaded: (_) => setState(() => topLoaded = true),
+          onAdFailedToLoad: (ad, error) {
+            ad.dispose();
+            topAd = null;
+          },
+        ),
+      )..load();
 
-    bottomAd = BannerAd(
-      adUnitId: 'ca-app-pub-8454932729334320/9615839716',
-      size: AdSize.banner,
-      request: const AdRequest(),
-      listener: BannerAdListener(
-        onAdLoaded: (_) => setState(() => bottomLoaded = true),
-        onAdFailedToLoad: (ad, error) => ad.dispose(),
-      ),
-    )..load();
+      bottomAd = BannerAd(
+        adUnitId: 'ca-app-pub-8454932729334320/9615839716',
+        size: AdSize.banner,
+        request: const AdRequest(),
+        listener: BannerAdListener(
+          onAdLoaded: (_) => setState(() => bottomLoaded = true),
+          onAdFailedToLoad: (ad, error) {
+            ad.dispose();
+            bottomAd = null;
+          },
+        ),
+      )..load();
+    }
   }
 
   @override
   void dispose() {
-    topAd.dispose();
-    bottomAd.dispose();
+    topAd?.dispose();
+    bottomAd?.dispose();
     super.dispose();
   }
 
   Widget adWidget(BannerAd ad) {
-    return SizedBox(
-      height: 50,
-      child: AdWidget(ad: ad),
-    );
+    return SizedBox(height: 50, child: AdWidget(ad: ad));
   }
 
   void navigateToGame(bool isRobot, String difficulty) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => GameScreen(isRobot: isRobot, difficulty: difficulty),
-      ),
-    );
+    try {
+      debugPrint("Navigating to GameScreen: isRobot=$isRobot, difficulty=$difficulty");
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => GameScreen(isRobot: isRobot, difficulty: difficulty),
+        ),
+      );
+    } catch (e, stack) {
+      debugPrint("Navigation error: $e");
+      debugPrint(stack.toString());
+    }
   }
 
   @override
@@ -95,13 +116,15 @@ class _HomeScreenState extends State<HomeScreen> {
         centerTitle: true,
         title: const Text(
           "TIC TAC ShowDown",
-          style:
-              TextStyle(color: Colors.cyanAccent, fontWeight: FontWeight.bold),
+          style: TextStyle(
+            color: Colors.cyanAccent,
+            fontWeight: FontWeight.bold,
+          ),
         ),
       ),
       body: Column(
         children: [
-          if (topLoaded) adWidget(topAd),
+          if (topLoaded && topAd != null) adWidget(topAd!),
           Expanded(
             child: Center(
               child: SingleChildScrollView(
@@ -132,12 +155,17 @@ class _HomeScreenState extends State<HomeScreen> {
                           foregroundColor: Colors.black,
                           minimumSize: const Size(220, 48),
                           shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8)),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
                         ),
                         onPressed: () => navigateToGame(false, "None"),
-                        child: const Text("Human VS Human",
-                            style: TextStyle(
-                                fontWeight: FontWeight.bold, fontSize: 16)),
+                        child: const Text(
+                          "Human VS Human",
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                          ),
+                        ),
                       ),
                       const SizedBox(height: 20),
                       ElevatedButton(
@@ -146,25 +174,31 @@ class _HomeScreenState extends State<HomeScreen> {
                           foregroundColor: Colors.black,
                           minimumSize: const Size(220, 48),
                           shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8)),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
                         ),
                         onPressed: () {
                           setState(() {
                             showDifficultyMenu = true;
                           });
                         },
-                        child: const Text("Human VS Robot",
-                            style: TextStyle(
-                                fontWeight: FontWeight.bold, fontSize: 16)),
+                        child: const Text(
+                          "Human VS Robot",
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                          ),
+                        ),
                       ),
                     ] else ...[
                       // Dynamic AI Difficulty Sub-Menu
                       const Text(
                         "Select AI Difficulty",
                         style: TextStyle(
-                            color: Colors.greenAccent,
-                            fontSize: 16,
-                            fontWeight: FontWeight.w500),
+                          color: Colors.greenAccent,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                        ),
                       ),
                       const SizedBox(height: 15),
                       ElevatedButton(
@@ -174,8 +208,10 @@ class _HomeScreenState extends State<HomeScreen> {
                           minimumSize: const Size(200, 42),
                         ),
                         onPressed: () => navigateToGame(true, "Easy"),
-                        child: const Text("Easy Mode",
-                            style: TextStyle(fontWeight: FontWeight.bold)),
+                        child: const Text(
+                          "Easy Mode",
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                        ),
                       ),
                       const SizedBox(height: 12),
                       ElevatedButton(
@@ -185,8 +221,10 @@ class _HomeScreenState extends State<HomeScreen> {
                           minimumSize: const Size(200, 42),
                         ),
                         onPressed: () => navigateToGame(true, "Medium"),
-                        child: const Text("Medium Mode",
-                            style: TextStyle(fontWeight: FontWeight.bold)),
+                        child: const Text(
+                          "Medium Mode",
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                        ),
                       ),
                       const SizedBox(height: 12),
                       ElevatedButton(
@@ -196,8 +234,10 @@ class _HomeScreenState extends State<HomeScreen> {
                           minimumSize: const Size(200, 42),
                         ),
                         onPressed: () => navigateToGame(true, "Hard"),
-                        child: const Text("Hard (Unbeatable)",
-                            style: TextStyle(fontWeight: FontWeight.bold)),
+                        child: const Text(
+                          "Hard (Unbeatable)",
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                        ),
                       ),
                       const SizedBox(height: 20),
                       TextButton.icon(
@@ -206,10 +246,15 @@ class _HomeScreenState extends State<HomeScreen> {
                             showDifficultyMenu = false;
                           });
                         },
-                        icon: const Icon(Icons.arrow_back,
-                            color: Colors.white70, size: 18),
-                        label: const Text("Back to Main Menu",
-                            style: TextStyle(color: Colors.white70)),
+                        icon: const Icon(
+                          Icons.arrow_back,
+                          color: Colors.white70,
+                          size: 18,
+                        ),
+                        label: const Text(
+                          "Back to Main Menu",
+                          style: TextStyle(color: Colors.white70),
+                        ),
                       ),
                     ],
                   ],
@@ -219,7 +264,7 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ],
       ),
-      bottomNavigationBar: bottomLoaded ? adWidget(bottomAd) : const SizedBox(),
+      bottomNavigationBar: (bottomLoaded && bottomAd != null) ? adWidget(bottomAd!) : const SizedBox(),
     );
   }
 }
@@ -229,8 +274,11 @@ class GameScreen extends StatefulWidget {
   final bool isRobot;
   final String difficulty;
 
-  const GameScreen(
-      {super.key, required this.isRobot, required this.difficulty});
+  const GameScreen({
+    super.key,
+    required this.isRobot,
+    required this.difficulty,
+  });
 
   @override
   State<GameScreen> createState() => _GameScreenState();
@@ -240,11 +288,40 @@ class _GameScreenState extends State<GameScreen> {
   List<String> board = List.filled(9, "");
   bool isXTurn = true;
   bool gameOver = false;
+  BannerAd? bottomAd;
+  bool bottomLoaded = false;
+
+  @override
+  void initState() {
+    super.initState();
+    if (isMobile) {
+      bottomAd = BannerAd(
+        adUnitId: 'ca-app-pub-8454932729334320/9615839716',
+        size: AdSize.banner,
+        request: const AdRequest(),
+        listener: BannerAdListener(
+          onAdLoaded: (_) {
+            if (mounted) setState(() => bottomLoaded = true);
+          },
+          onAdFailedToLoad: (ad, error) {
+            ad.dispose();
+            bottomAd = null;
+          },
+        ),
+      )..load();
+    }
+  }
+
+  @override
+  void dispose() {
+    bottomAd?.dispose();
+    super.dispose();
+  }
 
   final List<List<int>> winLines = [
     [0, 1, 2], [3, 4, 5], [6, 7, 8], // Rows
     [0, 3, 6], [1, 4, 7], [2, 5, 8], // Columns
-    [0, 4, 8], [2, 4, 6] // Diagonals
+    [0, 4, 8], [2, 4, 6], // Diagonals
   ];
 
   String checkWinner(List<String> currentBoard) {
@@ -415,8 +492,10 @@ class _GameScreenState extends State<GameScreen> {
       barrierDismissible: false,
       builder: (_) => AlertDialog(
         backgroundColor: const Color(0xff11212D),
-        title: const Text("Game Over",
-            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        title: const Text(
+          "Game Over",
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+        ),
         content: Text(
           outcome == "Draw" ? "It's a Tie!" : "$outcome Wins!",
           style: const TextStyle(color: Colors.cyanAccent, fontSize: 18),
@@ -427,16 +506,20 @@ class _GameScreenState extends State<GameScreen> {
               Navigator.pop(context);
               resetGame();
             },
-            child: const Text("Play Again",
-                style: TextStyle(color: Colors.greenAccent)),
+            child: const Text(
+              "Play Again",
+              style: TextStyle(color: Colors.greenAccent),
+            ),
           ),
           TextButton(
             onPressed: () {
               Navigator.pop(context);
               Navigator.pop(context);
             },
-            child: const Text("Home Menu",
-                style: TextStyle(color: Colors.white70)),
+            child: const Text(
+              "Home Menu",
+              style: TextStyle(color: Colors.white70),
+            ),
           ),
         ],
       ),
@@ -451,7 +534,7 @@ class _GameScreenState extends State<GameScreen> {
         decoration: BoxDecoration(
           color: const Color(0xff11212D),
           borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: Colors.white.withOpacity(0.05)),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
         ),
         child: Center(
           child: Text(
@@ -474,11 +557,14 @@ class _GameScreenState extends State<GameScreen> {
       appBar: AppBar(
         backgroundColor: const Color(0xff11212D),
         iconTheme: const IconThemeData(
-            color: Colors.cyanAccent), // Bright neon back arrow indicator
+          color: Colors.cyanAccent,
+        ), // Bright neon back arrow indicator
         title: Text(
           widget.isRobot ? "Robot (${widget.difficulty})" : "Human vs Human",
           style: const TextStyle(
-              color: Colors.cyanAccent, fontWeight: FontWeight.bold),
+            color: Colors.cyanAccent,
+            fontWeight: FontWeight.bold,
+          ),
         ),
       ),
       body: Column(
@@ -488,10 +574,13 @@ class _GameScreenState extends State<GameScreen> {
             gameOver
                 ? "Match Concluded"
                 : (isXTurn
-                    ? "X"
-                    : (widget.isRobot ? "Robot calculating..." : "O")),
+                      ? "X"
+                      : (widget.isRobot ? "Robot calculating..." : "O")),
             style: const TextStyle(
-                color: Colors.white, fontSize: 18, letterSpacing: 0.5),
+              color: Colors.white,
+              fontSize: 18,
+              letterSpacing: 0.5,
+            ),
           ),
           const SizedBox(height: 25),
           Expanded(
@@ -508,18 +597,26 @@ class _GameScreenState extends State<GameScreen> {
           ),
           ElevatedButton.icon(
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.redAccent.withOpacity(0.8),
+              backgroundColor: Colors.redAccent.withValues(alpha: 0.8),
               foregroundColor: Colors.white,
               minimumSize: const Size(140, 40),
             ),
             onPressed: resetGame,
             icon: const Icon(Icons.refresh, size: 18),
-            label: const Text("Restart",
-                style: TextStyle(fontWeight: FontWeight.bold)),
+            label: const Text(
+              "Restart",
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
           ),
           const SizedBox(height: 35),
         ],
       ),
+      bottomNavigationBar: (bottomLoaded && bottomAd != null)
+          ? SizedBox(
+              height: 50,
+              child: AdWidget(ad: bottomAd!),
+            )
+          : const SizedBox(),
     );
   }
 }
